@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "pytune-stream"
+version = "0.1.0"
+description = "SSE streaming service for PyTune"
+authors = ["Gabriel de Fombelle <gabriel.de.fombelle@gmail.com>"]
+
+# ❗ Désactive totalement le packaging : essentiel pour un micro-service FastAPI
+package-mode = false
+
+packages = [{ include = "app" }] 
+# Dépendances (à compléter selon ce que tu installes ensuite)
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+fastapi = "^0.115.0"
+uvicorn = { extras = ["standard"], version = "^0.34.0" }
+starlette = "*"
+
+# Infra / persistence
+asyncpg = "^0.30.0"
+redis = "^5.0.7"
+# --- DEV (monorepo, editable) ---
+simple-logger = { path = "../../packages/simple_logger", develop = true }
+pytune-configuration = { path = "../../packages/pytune_configuration", develop = true }
+
+# --- PROD (git) ---
+# pytune-configuration = { git = "https://github.com/gdefombelle/pytune_configuration.git" }
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

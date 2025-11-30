@@ -1,0 +1,43 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# === Environnements ===
+.env
+.env.*
+!.env.example
+!.env.sample
+
+venv/
+.venv/
+
+# === Cache / Test ===
+.cache/
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+
+# === Logs ===
+*.log
+logs/
+pytune_logs/
+*.sqlite3
+
+# === Editors / OS ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# === Build artefacts ===
+dist/
+build/
+*.egg-info/
+
+# === Node / static (si jamais générés) ===
+static/
