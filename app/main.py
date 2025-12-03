@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -9,7 +10,7 @@ import toml
 from pathlib import Path
 import os
 from fastapi.middleware.cors import CORSMiddleware
-
+from pytune_auth_common.services.rate_middleware import RateLimitMiddleware, RateLimitConfig
 from simple_logger.logger import get_logger, SimpleLogger
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
 from app.sse_router import router as sse_router
@@ -20,17 +21,46 @@ if config is None: config = SimpleConfig()
 # 📦 Lecture de pyproject.toml
 pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
 pyproject_data = toml.load(pyproject_path)
+project_metadata = pyproject_data.get("project", {})
 
-project_metadata = pyproject_data["tool"]["poetry"]
-PROJECT_TITLE = project_metadata.get("name", "pytune_stream")
-PROJECT_VERSION = project_metadata.get("version", "0.1.0")
-PROJECT_DESCRIPTION = project_metadata.get("description", "PyTune SSE Stream")
+PROJECT_TITLE = project_metadata.get("name", "Unknown Service")
+PROJECT_VERSION = project_metadata.get("version", "0.0.0")
+PROJECT_DESCRIPTION = project_metadata.get("description", "")
 
 # 📄 Logger
 print("ENV LOG_DIR:", os.getenv("LOG_DIR"))
 logger = get_logger("pytune_stream")
 logger.info("✅ Logger actif", log_dir=os.getenv("LOG_DIR"))
 logger.info("********** STARTING PYTUNE SSE - STREAM ********")
+
+# Créer une instance de RateLimitConfig avec la config
+try:
+    rate_limit_config = RateLimitConfig(
+        rate_limit=int(config.RATE_MIDDLEWARE_RATE_LIMIT),
+        time_window=int(config.RATE_MIDDLEWARE_TIME_WINDOW),
+        block_time=int(config.RATE_MIDDLEWARE_LOCK_TIME),
+    )
+    logger.info("pytune_fastapi rate middleware ready")
+except Exception as e:
+    logger.critical("Failed to set RateLimit", error=e)
+    raise RuntimeError("Failed to set RateLimit:", e)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        # Initialisation avant le démarrage ....
+
+        await logger.asuccess("PYTUNE OAUTH READY!")
+        
+        yield  # Exécution de l'application
+
+    except asyncio.CancelledError:
+        await logger.acritical("Lifespan context was cancelled")
+        raise
+    finally:
+        await logger.asuccess("The FastAPI Pytune Auth process finished without errors.")
+
 
 app = FastAPI(
     title=PROJECT_TITLE,
@@ -51,6 +81,18 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
     expose_headers=["Authorization"],
 )
+if config.USE_RATE_MIDDLEWARE :
+    logger.info("APPLY RATE_MIDDLEWARE")
+    try:
+        app.add_middleware(
+            RateLimitMiddleware,
+            config=rate_limit_config,
+        )
+    except Exception as e:
+        logger.critical("Erreur lors de l'application des middlewares", error=e)
+        raise RuntimeError("Failed to load middlewares") from e
+else:
+    logger.info("DO NOT APPLY RATE_MIDDLEWARE")
 
 # 🔗 Inclure les routers
 app.include_router(sse_router)
