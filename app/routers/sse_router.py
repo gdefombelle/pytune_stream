@@ -2,7 +2,7 @@
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 import json
-from app.event_bus import event_stream
+from app.services.event_bus import event_stream
 
 router = APIRouter(prefix="/events")
 

@@ -13,7 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pytune_auth_common.services.rate_middleware import RateLimitMiddleware, RateLimitConfig
 from simple_logger.logger import get_logger, SimpleLogger
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
-from app.sse_router import router as sse_router
+from app.routers.sse_router import router as sse_router
+from app.routers.livekit_router import router as livekit_router
 
 # 📜 Initialisation
 if config is None: config = SimpleConfig()
@@ -96,6 +97,7 @@ else:
 
 # 🔗 Inclure les routers
 app.include_router(sse_router)
+app.include_router(livekit_router)
 
 # 📄 Gestion des erreurs FastAPI
 from fastapi.exceptions import RequestValidationError

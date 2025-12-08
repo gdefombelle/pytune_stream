@@ -1,24 +1,22 @@
 [project]
 name = "pytune_stream"
 version = "0.1.0"
-description = "SSE streaming service for PyTune"
 requires-python = ">=3.12,<3.13"
 
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",
-
     "redis>=5.0.7",
     "asyncpg>=0.30.0",
+    "livekit-api>=0.3.0",
 
-    # Internal PyTune packages — pulled via local path in Docker
     "pytune_configuration",
     "simple_logger",
+    "pytune_auth_common",
+    "pytune_data",
+    "pytune_chat",
+    "pytune_helpers_messaging",
+    "pytune-helpers-images",
+    "pytune_llm"
 ]
 
-[tool.uv]
-package = false
-
-[tool.uv.sources]
-pytune_configuration = { path = "../../packages/pytune_configuration" }
-simple_logger        = { path = "../../packages/simple_logger" }

@@ -2,20 +2,27 @@
 set -e
 
 SERVICE_NAME="pytune_stream"
-SERVER="root@195.201.9.184"
+SERVER="gabriel@195.201.9.184"
 
-# Always build from repo root
-REPO_ROOT=$(git rev-parse --show-toplevel)
+# Position du script → dossier du service
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Racine du monorepo = 3 niveaux au-dessus
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../" && pwd)"
+
+REMOTE_DIR="/home/gabriel/deploy/$SERVICE_NAME"
+LOGS_DIR="/home/gabriel/pytune_logs/$SERVICE_NAME"
+
+echo "📁 Repo root: $REPO_ROOT"
 cd "$REPO_ROOT"
-
-REMOTE_DIR="/root/deploy/$SERVICE_NAME"
-LOGS_DIR="/root/pytune_logs/$SERVICE_NAME"
 
 echo "🚀 Deploying $SERVICE_NAME to server…"
 
-echo "📦 Building Docker image..."
-docker build -t $SERVICE_NAME:latest \
-    -f src/services/pytune_stream/Dockerfile \
+echo "📦 Building Docker image (AMD64)..."
+docker build \
+    --platform linux/amd64 \
+    -t $SERVICE_NAME:latest \
+    -f src/services/$SERVICE_NAME/Dockerfile \
     .
 
 echo "📦 Saving image to tarball..."
@@ -28,27 +35,31 @@ scp $SERVICE_NAME.tar.gz $SERVER:$REMOTE_DIR/
 echo "🔧 Deploying on server..."
 ssh $SERVER << EOF
 set -e
-
 cd $REMOTE_DIR
 
+echo "📦 Loading Docker image…"
 gunzip -f $SERVICE_NAME.tar.gz
 docker load < $SERVICE_NAME.tar
 
+echo "🛑 Stopping old container…"
 docker stop $SERVICE_NAME || true
 docker rm $SERVICE_NAME || true
 
+echo "📁 Ensuring logs directory…"
 mkdir -p $LOGS_DIR
 
+echo "🚀 Starting new container…"
 docker run -d \
     --name $SERVICE_NAME \
     --restart always \
+    --network pytune_network \
     -p 8009:8009 \
     -v $LOGS_DIR:/var/log/pytune \
     -e LOG_DIR="/var/log/pytune" \
+    --env-file /home/gabriel/pytune.env \
     $SERVICE_NAME:latest
 
 rm -f $SERVICE_NAME.tar
-
 EOF
 
-echo "🎉 Done!"
+echo "🎉 $SERVICE_NAME deployed successfully!"
