@@ -79,8 +79,17 @@ app.add_middleware(
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["Authorization", "Content-Type"],
-    expose_headers=["Authorization"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "X-Refresh-Token",
+    ],
+    expose_headers=[
+        "Authorization",
+        "X-Refresh-Token",
+    ],
 )
 if config.USE_RATE_MIDDLEWARE :
     logger.info("APPLY RATE_MIDDLEWARE")
