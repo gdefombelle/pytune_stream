@@ -1,8 +1,9 @@
 # app/sse_router.py
-from fastapi import APIRouter
+from datetime import time
+from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import StreamingResponse
 import json
-from app.services.event_bus import event_stream
+from app.services.event_bus import event_stream, publish_event
 
 router = APIRouter(prefix="/events")
 
@@ -28,3 +29,17 @@ async def sse():
             "X-Accel-Buffering": "no",
         }
     )
+
+@router.post("/push")
+async def push_event(event: dict = Body(...)):
+    """
+    Push an event to the PyTune SSE stream.
+    Used by other backend services.
+    """
+    if "type" not in event:
+        raise HTTPException(status_code=400, detail="Missing event.type")
+
+    event.setdefault("ts", time.time())
+
+    await publish_event(event)
+    return {"status": "ok"}
