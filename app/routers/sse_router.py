@@ -1,6 +1,6 @@
 # app/sse_router.py
 from datetime import time
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Response
 from fastapi.responses import StreamingResponse
 import json
 from app.services.event_bus import event_stream, publish_event
@@ -17,6 +17,10 @@ async def sse_generator():
             f"data: {payload}\n\n"
         )
 
+
+@router.options("/sse")
+async def sse_options():
+    return Response(status_code=200)
 
 @router.get("/sse")
 async def sse():
