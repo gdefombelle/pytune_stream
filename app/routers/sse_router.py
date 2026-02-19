@@ -1,5 +1,5 @@
 # app/sse_router.py
-from datetime import time
+import time
 from fastapi import APIRouter, Body, HTTPException, Response
 from fastapi.responses import StreamingResponse
 import json
@@ -11,7 +11,6 @@ router = APIRouter(prefix="/events")
 async def sse_generator():
     async for event in event_stream():
         payload = json.dumps(event, ensure_ascii=False)
-
         yield (
             f"event: {event.get('type','analysis')}\n"
             f"data: {payload}\n\n"
@@ -22,6 +21,7 @@ async def sse_generator():
 async def sse_options():
     return Response(status_code=200)
 
+
 @router.get("/sse")
 async def sse():
     return StreamingResponse(
@@ -31,8 +31,9 @@ async def sse():
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
-        }
+        },
     )
+
 
 @router.post("/push")
 async def push_event(event: dict = Body(...)):
@@ -43,7 +44,7 @@ async def push_event(event: dict = Body(...)):
     if "type" not in event:
         raise HTTPException(status_code=400, detail="Missing event.type")
 
-    event.setdefault("ts", time.time())
+    event.setdefault("ts", time.time())  # seconds since epoch (float)
 
     await publish_event(event)
     return {"status": "ok"}
